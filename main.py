@@ -2,7 +2,14 @@ import argparse
 import pathlib
 import re
 import subprocess
+
 import tqdm
+
+output_dir = pathlib.Path("output")
+split_files_dir = output_dir / "split"
+processed_dir = output_dir / "processed"
+split_files_dir.mkdir(parents=True, exist_ok=True)
+processed_dir.mkdir(parents=True, exist_ok=True)
 
 
 def check_already_split(input_dir):
@@ -17,13 +24,12 @@ def split_file_by_regex(input_file, regex_pattern):
     splits = re.split(regex_pattern, content, flags=re.MULTILINE)
     splits = [s.strip() for s in splits if s.strip()]
 
-    output_dir = pathlib.Path("output")
-    output_dir.mkdir(exist_ok=True)
+    split_files_dir.mkdir(exist_ok=True)
 
     total_splits = len(splits)  # Total number of splits
     split_progress = tqdm.tqdm(total=total_splits, desc="Splitting")  # Progress bar
     for index, split in enumerate(splits, start=1):
-        output_file = output_dir / f"{index:09d}.txt"
+        output_file = split_files_dir / f"{index:09d}.txt"
         with output_file.open("w") as f:
             f.write(split)
         split_progress.update(1)  # Update progress bar
@@ -32,13 +38,14 @@ def split_file_by_regex(input_file, regex_pattern):
 
 
 def process_files_with_go_org(input_dir, processed_files_set):
+    split_files_dir.mkdir(exist_ok=True)
     input_files = list(input_dir.iterdir())
     total_files = len(input_files)  # Total number of input files
     process_progress = tqdm.tqdm(total=total_files, desc="Processing")  # Progress bar
     for index, input_file in enumerate(input_files, start=1):
         if input_file.is_file() and input_file.suffix == ".txt":
-            output_file_stdout = f"{input_file.stem}_stdout.txt"
-            output_file_stderr = f"{input_file.stem}_stderr.txt"
+            output_file_stdout = processed_dir / f"{input_file.stem}_stdout.txt"
+            output_file_stderr = processed_dir / f"{input_file.stem}_stderr.txt"
 
             if (
                 output_file_stdout not in processed_files_set
@@ -77,12 +84,12 @@ def main():
     except FileNotFoundError:
         pass
 
-    if check_already_split(pathlib.Path("output")):
+    if check_already_split(split_files_dir):
         print("File already split. Skipping splitting phase.")
     else:
         split_file_by_regex(args.input_file, args.regex_pattern)
 
-    process_files_with_go_org(pathlib.Path("output"), processed_files_set)
+    process_files_with_go_org(split_files_dir, processed_files_set)
 
 
 if __name__ == "__main__":
