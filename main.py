@@ -11,6 +11,9 @@ processed_dir = output_dir / "processed"
 split_files_dir.mkdir(parents=True, exist_ok=True)
 processed_dir.mkdir(parents=True, exist_ok=True)
 
+processed_files_manifest = output_dir / "processed_files.txt"
+processed_files_manifest.parent.mkdir(parents=True, exist_ok=True)
+
 
 def check_already_split(input_dir):
     output_files = list(input_dir.glob("*.txt"))
@@ -60,7 +63,7 @@ def process_files_with_go_org(input_dir, processed_files_set):
                 processed_files_set.add(output_file_stdout)
                 processed_files_set.add(output_file_stderr)
 
-                with open("processed_files.txt", "a") as f:
+                with open(processed_files_manifest, "a") as f:
                     f.write(f"{output_file_stdout}\n")
                     f.write(f"{output_file_stderr}\n")
 
@@ -79,7 +82,7 @@ def main():
     processed_files_set = set()
 
     try:
-        with open("processed_files.txt", "r") as f:
+        with open(processed_files_manifest, "r") as f:
             processed_files_set = set(f.read().splitlines())
     except FileNotFoundError:
         pass
